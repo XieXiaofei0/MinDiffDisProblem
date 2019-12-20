@@ -2,8 +2,11 @@
 #ifndef MIN_DIFF_DP_INPUTOUTPUT_H
 #define MIN_DIFF_DP_INPUTOUTPUT_H
 #include "common.h"
+constexpr auto EPS = 1e-6;
 
 namespace min_diff_dp{
+
+//extern std::vector<std::vector<double> > _matrix;     //全局变量的声明：可声明多次；为了在其它cpp中用。
 
 class UMatrix {
 public:
@@ -13,7 +16,6 @@ public:
     size_t setele_num() const { return nb_set_ele; }
     size_t subsetele_num() const { return nb_subset_ele; }
     const Distance& dis_nodes(int i, int j) const { return matrix[i][j]; }
-
 
 private:
     size_t nb_set_ele;              //总节点数
@@ -62,13 +64,13 @@ public:
     const Distance get_object() const { return object; }
 
     void randomInit();
+    bool check(const UMatrix &_matrix);          //检查当前解的目标函数值是否正确
     void print();
 
 private:
     int nb_set_ele;              //总节点数目
     int nb_subset_ele;           //所选的节点数目
     List<int> ele_value;         //一维vector标识节点是否被选中
-    //Set<int> select_nodes;        //选中的节点集合。（到底是用List保存还是Set保存）
     Distance object;               //目标函数值
 };
 

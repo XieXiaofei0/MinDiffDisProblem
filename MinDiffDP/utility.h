@@ -27,7 +27,7 @@ public:
     static const std::string humanDataStr();              // 返回表示日期格式的字符串，为易读的字符
 };
 
-class Random {
+class Random {              //xxf:修改为每测试一次算例则设置一次随机种子，即每个测试算例的随机种子是不同唯一的
 public:
     Random(unsigned int seed = 0); 
     void setSeed(unsigned int seed);                   // 设置随机数种子，只有在原始seed为0且第一次设置时有效

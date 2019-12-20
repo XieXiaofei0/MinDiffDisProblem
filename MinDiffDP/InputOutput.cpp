@@ -7,6 +7,13 @@ using namespace std;
 
 namespace min_diff_dp {
 
+//List<List<Distance> > _matrix;         //attention:全局变量的定义：只能定义一次；
+
+bool judgeDistanceEqual(const Distance &a, const Distance &b) {    //如果a比b大，返回true
+    return fabs(a - b) < EPS;
+    //return a > b + EPS;
+}
+
 UMatrix::UMatrix(const String &path) {
     ifstream ifs;
     ifs.open(path);
@@ -17,6 +24,7 @@ UMatrix::UMatrix(const String &path) {
     getline(ifs, line);
     istringstream stream(line);
     stream >> nb_set_ele >> nb_subset_ele;
+    //(nb_set_ele, List<Distance>(nb_set_ele, 0.0));
     matrix.resize(nb_set_ele);
     for (int i = 0; i < nb_set_ele; ++i)matrix[i].resize(nb_set_ele, 0.0);
     int node1, node2;
@@ -36,15 +44,37 @@ UMatrix::UMatrix(const String &path) {
 void Solution::randomInit() {
     int num_select = 0;
     int i = 0;
+    srand(myrand.getSeed());
     while (num_select < nb_subset_ele) {
         while (true) {
-            i = myrand.gen(nb_set_ele - 1);
+            i = rand() % nb_set_ele;
+            //i = myrand.gen(nb_set_ele - 1);
             if (ele_value[i] == 0)break;
         }
         ele_value[i] = 1;
-        //select_nodes.insert(i);
         num_select++;
     }
+}
+
+bool Solution::check(const UMatrix &_matrix) {
+    List<int> select_nodes;
+    select_nodes.reserve(nb_subset_ele);
+    for (int i = 0; i < nb_set_ele; ++i) {
+        if (ele_value[i])select_nodes.push_back(i);
+    }
+    Distance min = DISTANCE_MAX, max = 0;
+    for (int i = 0; i < nb_subset_ele; ++i) {
+        Distance cur = 0;
+        for (int j = 0; j < nb_subset_ele; ++j) {
+            cur += _matrix.dis_nodes(select_nodes[i], select_nodes[j]);
+        }
+        if (cur > max)max = cur;
+        if (cur < min)min = cur;
+    }
+    Distance obj = max - min;
+    mylog << "检查的目标函数值为：" << obj <<= logsw_info;
+    mylog << "当前的目标函数值为：" << object <<= logsw_info;
+    return judgeDistanceEqual(obj, object);
 }
 
 void Solution::print() {

@@ -30,11 +30,11 @@ Random::Random(unsigned int seed) {
 }
 
 void Random::setSeed(unsigned int seed) {
-    if (!set_seed_) {
-        set_seed_ = true;
+    //if (!set_seed_) {                        //xxf:每测试一次算例则设置一次随机种子
+     //   set_seed_ = true;
         srand(seed);
         seed_ = seed;
-    }
+    //}
 }
 
 int Random::gen(int ub, int lb) const {
