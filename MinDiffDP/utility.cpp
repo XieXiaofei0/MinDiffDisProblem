@@ -108,9 +108,7 @@ bool Random::set_seed_ = false;
 unsigned int Random::seed_ = 0;
 Random myrand;
 
-//Log mylog("Logs/");    // 带文件输出的log
-//自己电脑与实验室电脑区别 why？
-Log mylog("../Deploy/Logs/");
+Log mylog("Logs/");    // 带文件输出的log
 
 LogSwitch logsw_debug(1, 1, "DEBUG");
 LogSwitch logsw_info(1, 1, "INFO");

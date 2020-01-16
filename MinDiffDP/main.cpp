@@ -36,9 +36,7 @@ void benchmark(void test(string&)) {
     for (int i = 0; i < instances_id.size(); ++i) {
         int count = 0;
         for (int c_time = 0; c_time <= max_num_calculations; ++c_time) {
-            //string file_name = "Instances/MDG-" + instances_id[i] + ".txt";
-            //自己电脑-实验室电脑区别 why?
-            string file_name = "../Deploy/Instances/MDG-" + instances_id[i] + ".txt";
+            string file_name = "Instances/MDG-" + instances_id[i] + ".txt";
             ++count;
             mylog << "第" << count << "次测试算例" << instances_id[i] << "" <<= LogSwitch(1, 1, "BenchMark");
             test(file_name);
