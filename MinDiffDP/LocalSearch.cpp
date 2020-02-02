@@ -22,8 +22,9 @@ LocalSearch::LocalSearch(const UMatrix &_matrix, const double param, const Solut
     best_max_select_node(-1), best_min_select_node(DISTANCE_MAX),
     best_hashfun_one(-1),best_hashfun_two(-1),best_hashfun_three(0),
     nb_nodes(_matrix.setele_num()),nb_sub_nodes(_matrix.subsetele_num()), 
-    iter(0),//max_time(100000*1000), 
-    max_time(_matrix.setele_num() *1.5* 1000),
+    iter(0),//max_time(1000000*1000),                    //xxf:修改算例运行最长时间ms
+    //max_time(_matrix.setele_num() *1.3* 1000),
+    max_time(_matrix.setele_num()*1000),
     rate_of_sele_nodes(param), tabu_step(_tabu_step), size_of_tabu_list(_size_of_tabu),
     hashFun_one_param(_param1), hashFun_two_param(_param2), hashFun_three_param(_param3)
 {
@@ -90,7 +91,7 @@ Solution LocalSearch::solve() {
         node_value = local_best;               //强化搜索策略：用历史最优解更新当前解
         cur_obj = local_best_obj;
         //若历史最优解!=当前解,则要更新当前解的部分数据结构node_dis_sum，max_select_node， min_select_node，select_nodes和no_select_nodes
-        max_select_node = best_max_select_node;
+        max_select_node = best_max_select_node;                   //xxf:解决大bug1：之前替换当前解时，未更新相关数据结构node_dis_sum，select_nodes和no_select_nodes
         min_select_node = best_min_select_node;
         no_select_nodes.clear();            //更新辅助结构select_nodes和no_select_nodes
         select_nodes.clear();
@@ -108,13 +109,10 @@ Solution LocalSearch::solve() {
         int _hashfun_two = best_hashfun_two;
         int _hashfun_three = best_hashfun_three;
         bool tabu_flag = false;                     //检查是否邻域解都在禁忌中
+
         while (count <= tabu_step) {
             pair<int, int> swap_pair(-1, -1);              //邻域结构中找最好的非禁忌解:保存非禁忌的最好的交换对;第一个I1-->I0，第二个I0-->I1
             pair<Distance, Distance> new_obj(DISTANCE_MAX, 0);         //保存对应的目标函数的最大距离和最小距离
-            //test:判断_hashfun_one是否是当前解的hash值
-            //if (hash_function_one() != _hashfun_one) mylog << "while循环中：hash值出错\n" <<= logsw_local;
-            //if (hash_function_two() != _hashfun_two) mylog << "while循环中：hash值出错\n" <<= logsw_local;
-            //test end
             find_best_move(swap_pair, new_obj, _hashfun_one, _hashfun_two, _hashfun_three);   //_hashfun_one已经是更新解的哈希函数值
             //TODO:判断是否所有邻域解都在禁忌中
             if (swap_pair.first == -1) {       //判断是否邻域解都在禁忌中
@@ -144,29 +142,12 @@ void LocalSearch::find_best_move(pair<int, int> &_pair, pair<Distance, Distance>
             int _new_hash_one = new_hashone + hash_key_temp_one[zero_toOne_node] - hash_key_temp_one[one_toZero_node];  //计算交换后新解的哈希函数值
             int _new_hash_two = new_hashtwo + hash_key_temp_two[zero_toOne_node] - hash_key_temp_two[one_toZero_node];
             int _new_hash_three = new_hashthree + hash_key_temp_three[zero_toOne_node] - hash_key_temp_three[one_toZero_node];
-            _new_hash_one = _new_hash_one % size_of_tabu_list;
-            _new_hash_two = _new_hash_two % size_of_tabu_list;
-            _new_hash_three = _new_hash_three % size_of_tabu_list;
-            //test:判断邻域解的禁忌是否出错
-            //1.判断当前解的hash值是否出错
-            //if (iter > 75) {
-            //    if (hash_function_three() != new_hashthree) mylog << "find_best_move中：hash值出错\n" <<= logsw_local;
-            //    list<int> node_temp(node_value.begin(), node_value.end());
-            //    if (node_temp[zero_toone_node] == 0)node_temp[zero_toone_node] = 1;
-            //    else mylog << "find_best_move中：找交换节点出错" <<= logsw_info;
-            //    if (node_temp[one_tozero_node] == 1)node_temp[one_tozero_node] = 0;
-            //    else mylog << "find_best_move中：找交换节点出错" <<= logsw_info;
-            //    if (hash_function_temp_one(node_temp) != _new_hash_one) mylog << "find_best_move中：邻域解的hash值出错\n" <<= logsw_local;
-            //    if (hash_function_temp_two(node_temp) != _new_hash_two) mylog << "find_best_move中：邻域解的hash值出错\n" <<= logsw_local;
-            //    if (hash_function_temp_three(node_temp) != _new_hash_three) mylog << "find_best_move中：邻域解的hash值出错\n   " << hash_function_temp_three(node_temp) <<= logsw_local;
-            //    //test end
-            //}
+            _new_hash_one = (_new_hash_one+ size_of_tabu_list) % size_of_tabu_list;                //xxf：解决bug2：防止出现负数和>size_of_tabu_list的数
+            _new_hash_two = (_new_hash_two + size_of_tabu_list) % size_of_tabu_list;
+            _new_hash_three = (_new_hash_three + size_of_tabu_list) % size_of_tabu_list;
             if (tabu_list_one[_new_hash_one]) {       //xxf：论文中说更多个哈希函数能够降低判断禁忌状态的时间复杂度
                 if (tabu_list_two[_new_hash_two])
                     if (tabu_list_three[_new_hash_three]) {
-                        //test
-                        //mylog << "iter：" << iter << ";  禁忌解：" << _new_hash_one << " " << _new_hash_two << " " << _new_hash_three <<= logsw_local;
-                        //test end
                         continue;
                     }
             }
@@ -191,14 +172,6 @@ void LocalSearch::find_best_move(pair<int, int> &_pair, pair<Distance, Distance>
             }
         }
     }
-    //test
-    //if (iter > 34822) {
-        //mylog << "find_end: pair: " << _pair.first << " " << _pair.second <<= logsw_local;
-        //if (node_value[_pair.first] != 1 || node_value[_pair.second] != 0)mylog << "交换节点出错bug" <<= logsw_local;
-        //mylog << "find_end: _new_obj: " << _new_obj.first << " " << _new_obj.second <<= logsw_local;
-        //mylog << "find_end: hash: " << _hash_one << " " << _hash_two << " " << _hash_three <<= logsw_local;
-        //if (_pair.first == -1)mylog << "find_move:邻域解都在禁忌中" <<= logsw_info;
-    //}
 }
 
 bool LocalSearch::update_solu(const pair<int, int> &_pair, const pair<Distance, Distance> &_new_obj, int &_hash_one, int &_hash_two, int &_hash_three) {  //xxf:done,right-12.10
@@ -208,9 +181,6 @@ bool LocalSearch::update_solu(const pair<int, int> &_pair, const pair<Distance, 
     cur_obj = _new_obj.first - _new_obj.second;
     max_select_node = _new_obj.first;
     min_select_node = _new_obj.second;
-    //test 
-    //if (hash_function_one() != _hash_one) mylog << "update:  hash值出错" <<= logsw_local;
-    //test end
     if (local_best_obj > cur_obj)       //更新历史最优解，更新历史最优解的相关结构
     {    
         local_best = node_value;  //如果能改进历史最优解，则更新历史最优解,返回true
@@ -222,21 +192,13 @@ bool LocalSearch::update_solu(const pair<int, int> &_pair, const pair<Distance, 
         mylog << "\n当前为：" << local_best_obj << "     迭代：" << iter <<= logsw_local;
         flag = true;
     }
-    //test:判断hash值是否是当前解的hash值
-    //if (hash_function_three() != _hash_three) mylog << "update中：hash值出错\n" <<= logsw_local;
-    //mylog << "解的禁忌值： " << tabu_list_one[_hash_one] << " " << tabu_list_two[_hash_two] << " " << tabu_list_three[_hash_three] <<= logsw_info;
-    //test end
     tabu_list_one[_hash_one] = 1;         //更新三个禁忌列表
     tabu_list_two[_hash_two] = 1;
     tabu_list_three[_hash_three] = 1;
-    //mylog << "解的禁忌值 -更新后： " << tabu_list_one[_hash_one] << " " << tabu_list_two[_hash_two] << " " << tabu_list_three[_hash_three] <<= logsw_info;
-    //test
-    //mylog << "当前禁忌的解为：" << _hash_one << "  " << _hash_two << "  " << _hash_three <<= logsw_info;
-    //test end
     no_select_nodes.clear();           //更新辅助结构select_nodes和no_select_nodes
     select_nodes.clear();
     Distance temp_sum = (max_select_node + min_select_node) / 2.0;
-    if (flag) {
+    if (flag) {           //若更新了历史最优解，则保存历史最优解的相关数据结构best_solu_dis_sum
         best_max_select_node = max_select_node;
         best_min_select_node = min_select_node;
         for (int i = 0; i < nb_nodes; ++i) {
@@ -258,27 +220,6 @@ bool LocalSearch::update_solu(const pair<int, int> &_pair, const pair<Distance, 
     sort(no_select_nodes.begin(), no_select_nodes.end(), compareByAscend);    //未选中的升序排列
     return flag;
 }
-
-//void LocalSearch::update_auxiliary_structure(const pair<int, int> &_pair, const int &_hash_one, const  int &_hash_two, const int &_hash_three) {      //xxf:done,right
-//    //
-//    tabu_list_one[_hash_one] = 1;         //更新三个禁忌列表
-//    tabu_list_two[_hash_two] = 1;
-//    tabu_list_three[_hash_three] = 1;
-//    no_select_nodes.clear();           //更新辅助结构select_nodes和no_select_nodes
-//    select_nodes.clear();
-//    select_nodes.reserve(nb_sub_nodes);
-//    no_select_nodes.reserve(nb_nodes - nb_sub_nodes);
-//    Distance temp_sum = (max_select_node + min_select_node) / 2;
-//    for (int i = 0; i < nb_nodes; ++i) {
-//        //node_dis_sum[i] = node_dis_sum[i] - _matrix[i][_pair.first] + _matrix[i][_pair.second];
-//        node_dis_sum[i] = node_dis_sum[i] - ins.dis_nodes(i, _pair.first) + ins.dis_nodes(i, _pair.second);
-//        Distance temp = fabs(node_dis_sum[i] - temp_sum);
-//        if (node_value[i])select_nodes.push_back(make_pair(i, temp));
-//        else no_select_nodes.push_back(make_pair(i, temp));
-//    }
-//    sort(no_select_nodes.begin(), no_select_nodes.end(), compareByAscend);    //未选中的升序排列
-//}
-
 //int LocalSearch::hash_function_one() {
 //    long long sum = 0;
 //    for (int i = 0; i < nb_nodes; ++i) {
@@ -288,51 +229,10 @@ bool LocalSearch::update_solu(const pair<int, int> &_pair, const pair<Distance, 
 //    }
 //    return sum % size_of_tabu_list;
 //}
-//
-//int LocalSearch::hash_function_two() {
-//    long long sum = 0;
-//    for (int i = 0; i < nb_nodes; ++i) {
-//        if (node_value[i]) {
-//            sum += hash_key_temp_two[i];
-//        }
-//    }
-//    return sum % size_of_tabu_list;
-//}
-//
 //int LocalSearch::hash_function_three() {
 //    long long sum = 0;
 //    for (int i = 0; i < nb_nodes; ++i) {
 //        if (node_value[i]) {
-//            sum += hash_key_temp_three[i];
-//        }
-//    }
-//    return sum % size_of_tabu_list;
-//}
-//
-//int LocalSearch::hash_function_temp_one(const vector<int>& temp) {
-//    long long sum = 0;
-//    for (int i = 0; i < nb_nodes; ++i) {
-//        if (temp[i]) {
-//            sum += hash_key_temp_one[i];
-//        }
-//    }
-//    return sum % size_of_tabu_list;
-//}
-//
-//int LocalSearch::hash_function_temp_two(const vector<int>& temp) {
-//    long long sum = 0;
-//    for (int i = 0; i < nb_nodes; ++i) {
-//        if (temp[i]) {
-//            sum += hash_key_temp_two[i];
-//        }
-//    }
-//    return sum % size_of_tabu_list;
-//}
-//
-//int LocalSearch::hash_function_temp_three(const vector<int>& temp) {
-//    long long sum = 0;
-//    for (int i = 0; i < nb_nodes; ++i) {
-//        if (temp[i]) {
 //            sum += hash_key_temp_three[i];
 //        }
 //    }

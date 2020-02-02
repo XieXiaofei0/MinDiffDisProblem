@@ -108,7 +108,8 @@ bool Random::set_seed_ = false;
 unsigned int Random::seed_ = 0;
 Random myrand;
 
-Log mylog("Logs/");    // 带文件输出的log
+//Log mylog("Logs/");    // 带文件输出的log
+Log mylog("../Deploy/Logs/");
 
 LogSwitch logsw_debug(1, 1, "DEBUG");
 LogSwitch logsw_info(1, 1, "INFO");
