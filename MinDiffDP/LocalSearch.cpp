@@ -24,7 +24,7 @@ LocalSearch::LocalSearch(const UMatrix &_matrix, const double param, const Solut
     best_hashfun_one(-1),best_hashfun_two(-1),best_hashfun_three(0),
     nb_nodes(_matrix.setele_num()),nb_sub_nodes(_matrix.subsetele_num()), 
     iter(0),//max_time(1000000*1000),                    //xxf:ĞŞ¸ÄËãÀıÔËĞĞ×î³¤Ê±¼äms
-    max_time(_matrix.setele_num() *2* 1000),
+    max_time(_matrix.setele_num() *1* 1000),
     //max_time(_matrix.setele_num()*1000),
     rate_of_sele_nodes(param), tabu_step(_tabu_step), size_of_tabu_list(_size_of_tabu),
     hashFun_one_param(_param1), hashFun_two_param(_param2), hashFun_three_param(_param3)
@@ -40,7 +40,7 @@ LocalSearch::LocalSearch(const UMatrix &_matrix, const double param, const Solut
     hash_key_temp_two.resize(nb_nodes, 0);
     hash_key_temp_three.resize(nb_nodes, 0);
     //µãµÄ½û¼É
-    tabu_nodes.resize(nb_nodes, 0);
+    //tabu_nodes.resize(nb_nodes, 0);
     init();
 }
 
@@ -89,52 +89,43 @@ void LocalSearch::init() {              //xxf:done,right-12.10;ÁÙÊ±¹şÏ£º¯ÊıÖĞ¼ä¼
 }
 
 Solution LocalSearch::solve() {
-    //ÉèÖÃ½û¼É²½³¤
-    int tabu_length = 200;
-    //end
     Timer time(max_time);
+    int fixed_value = 2000;
+    //if (nb_sub_nodes == 50)fixed_value = 4000;
+    //else fixed_value = 2000;
+    //int fixed_value = 10000 / nb_nodes * 100 + 1000 / nb_sub_nodes * 100;
     int step_length = 0;           //¼ÇÂ¼¶àÉÙ²½Ö®ÄÚ²»ÄÜ¸Ä½øÀúÊ·×îÓÅ½â
     bool tabu_flag = false;          //ÅĞ¶ÏÊÇ·ñÁÚÓò½â¶¼ÔÚ½û¼ÉÖĞ
-    //test
-    //double k = 0.07;              //¶¯Ì¬Öµ£ºÁÚÓò½á¹¹µÄ³¤¶È
-    //test end
+    bool length_flag = false;
+    clock_t start_time = clock();
     while (!time.isTimeOut()) {           //µ±Ê±¼äÎ´³¬Ê±Ê±£¬½øĞĞ¾Ö²¿ËÑË÷ 
         int _hashfun_one = best_hashfun_one;
         int _hashfun_two = best_hashfun_two;
         int _hashfun_three = best_hashfun_three;
 
         //Ëæ»úÈÅ¶¯
-        //if (tabu_flag) {                 //Èç¹ûÁÚÓò½â¶¼ÔÚ½û¼ÉÖĞ»òÕßÒ»¶¨²½ÊıÄÚ¸Ä½ø²»ÁËÀúÊ·×îÓÅ½â£¬´ËÊ±ÉèÎª5000
-        //    //test
-        //    mylog << "µ±Ç°ÀúÊ·×îÓÅ½â£º " << local_best_obj <<= logsw_info;
-        //    mylog << "µ±Ç°½â£º " << cur_obj <<= logsw_info;
-        //    //test end
-        //    stochastic_perturbation(_hashfun_one, _hashfun_two, _hashfun_three, max_select_node, min_select_node);
-        //    tabu_flag = false;          //±êÖ¾Î»¸´Î»
-        //    step_length = 0;
-        //    //test
-        //    mylog << "Ëæ»ú½â£º " << cur_obj <<= logsw_info;
-        ////mylog << "Ëæ»ú½âÎª£º ";
-        ////for (int i = 0; i < nb_nodes; ++i) {
-        ////    if (node_value[i])mylog << i << "  ";
-        ////}
-        //}
-        //else {
-        //    node_value = local_best;               //Ç¿»¯ËÑË÷²ßÂÔ£ºÓÃÀúÊ·×îÓÅ½â¸üĞÂµ±Ç°½â
-        //    cur_obj = local_best_obj;
-        //    //ÈôÀúÊ·×îÓÅ½â!=µ±Ç°½â,ÔòÒª¸üĞÂµ±Ç°½âµÄ²¿·ÖÊı¾İ½á¹¹node_dis_sum£¬max_select_node£¬ min_select_node£¬select_nodesºÍno_select_nodes
-        //    max_select_node = best_max_select_node;                   //xxf:½â¾ö´óbug1£ºÖ®Ç°Ìæ»»µ±Ç°½âÊ±£¬Î´¸üĞÂÏà¹ØÊı¾İ½á¹¹node_dis_sum£¬select_nodesºÍno_select_nodes
-        //    min_select_node = best_min_select_node;
-        //    no_select_nodes.clear();            //¸üĞÂ¸¨Öú½á¹¹select_nodesºÍno_select_nodes
-        //    select_nodes.clear();
-        //    Distance temp_sum = (best_max_select_node + best_min_select_node) / 2;
-        //    for (int i = 0; i < nb_nodes; ++i) {
-        //        node_dis_sum[i] = best_solu_dis_sum[i];
-        //        Distance temp = fabs(best_solu_dis_sum[i] - temp_sum);
-        //        if (node_value[i])select_nodes.push_back(make_pair(i, temp));
-        //        else no_select_nodes.push_back(make_pair(i, temp));
-        //    }
-        //}
+          if (length_flag) {
+                for (int i = 0; i < 3; ++i)
+                    stochastic_perturbation(_hashfun_one, _hashfun_two, _hashfun_three, max_select_node, min_select_node);
+                length_flag = false;
+                step_length = 0;
+            }
+        else {
+            node_value = local_best;               //Ç¿»¯ËÑË÷²ßÂÔ£ºÓÃÀúÊ·×îÓÅ½â¸üĞÂµ±Ç°½â
+            cur_obj = local_best_obj;
+            //ÈôÀúÊ·×îÓÅ½â!=µ±Ç°½â,ÔòÒª¸üĞÂµ±Ç°½âµÄ²¿·ÖÊı¾İ½á¹¹node_dis_sum£¬max_select_node£¬ min_select_node£¬select_nodesºÍno_select_nodes
+            max_select_node = best_max_select_node;                   //xxf:½â¾ö´óbug1£ºÖ®Ç°Ìæ»»µ±Ç°½âÊ±£¬Î´¸üĞÂÏà¹ØÊı¾İ½á¹¹node_dis_sum£¬select_nodesºÍno_select_nodes
+            min_select_node = best_min_select_node;
+            no_select_nodes.clear();            //¸üĞÂ¸¨Öú½á¹¹select_nodesºÍno_select_nodes
+            select_nodes.clear();
+            Distance temp_sum = (best_max_select_node + best_min_select_node) / 2;
+            for (int i = 0; i < nb_nodes; ++i) {
+                node_dis_sum[i] = best_solu_dis_sum[i];
+                Distance temp = fabs(best_solu_dis_sum[i] - temp_sum);
+                if (node_value[i])select_nodes.push_back(make_pair(i, temp));
+                else no_select_nodes.push_back(make_pair(i, temp));
+            }
+        }
                 //Ëæ»úÌôÑ¡ÁÚÓò½â½øĞĞÈÅ¶¯
         //if (tabu_flag) {
         //    for (int i = 0; i < 3; ++i) {
@@ -154,20 +145,20 @@ Solution LocalSearch::solve() {
         //    mylog << "µ±Ç°½â£º " << cur_obj <<= logsw_info;
         //}
 
-        node_value = local_best;               //Ç¿»¯ËÑË÷²ßÂÔ£ºÓÃÀúÊ·×îÓÅ½â¸üĞÂµ±Ç°½â
-        cur_obj = local_best_obj;
-        //ÈôÀúÊ·×îÓÅ½â!=µ±Ç°½â,ÔòÒª¸üĞÂµ±Ç°½âµÄ²¿·ÖÊı¾İ½á¹¹node_dis_sum£¬max_select_node£¬ min_select_node£¬select_nodesºÍno_select_nodes
-        max_select_node = best_max_select_node;                   //xxf:½â¾ö´óbug1£ºÖ®Ç°Ìæ»»µ±Ç°½âÊ±£¬Î´¸üĞÂÏà¹ØÊı¾İ½á¹¹node_dis_sum£¬select_nodesºÍno_select_nodes
-        min_select_node = best_min_select_node;
-        no_select_nodes.clear();            //¸üĞÂ¸¨Öú½á¹¹select_nodesºÍno_select_nodes
-        select_nodes.clear();
-        Distance temp_sum = (best_max_select_node + best_min_select_node) / 2;
-        for (int i = 0; i < nb_nodes; ++i) {
-            node_dis_sum[i] = best_solu_dis_sum[i];
-            Distance temp = fabs(best_solu_dis_sum[i] - temp_sum);
-            if (node_value[i])select_nodes.push_back(make_pair(i, temp));
-            else no_select_nodes.push_back(make_pair(i, temp));
-        }
+        //node_value = local_best;               //Ç¿»¯ËÑË÷²ßÂÔ£ºÓÃÀúÊ·×îÓÅ½â¸üĞÂµ±Ç°½â
+        //cur_obj = local_best_obj;
+        ////ÈôÀúÊ·×îÓÅ½â!=µ±Ç°½â,ÔòÒª¸üĞÂµ±Ç°½âµÄ²¿·ÖÊı¾İ½á¹¹node_dis_sum£¬max_select_node£¬ min_select_node£¬select_nodesºÍno_select_nodes
+        //max_select_node = best_max_select_node;                   //xxf:½â¾ö´óbug1£ºÖ®Ç°Ìæ»»µ±Ç°½âÊ±£¬Î´¸üĞÂÏà¹ØÊı¾İ½á¹¹node_dis_sum£¬select_nodesºÍno_select_nodes
+        //min_select_node = best_min_select_node;
+        //no_select_nodes.clear();            //¸üĞÂ¸¨Öú½á¹¹select_nodesºÍno_select_nodes
+        //select_nodes.clear();
+        //Distance temp_sum = (best_max_select_node + best_min_select_node) / 2;
+        //for (int i = 0; i < nb_nodes; ++i) {
+        //    node_dis_sum[i] = best_solu_dis_sum[i];
+        //    Distance temp = fabs(best_solu_dis_sum[i] - temp_sum);
+        //    if (node_value[i])select_nodes.push_back(make_pair(i, temp));
+        //    else no_select_nodes.push_back(make_pair(i, temp));
+        //}
         sort(no_select_nodes.begin(), no_select_nodes.end(), compareByAscend);    //Î´Ñ¡ÖĞµÄÉıĞòÅÅÁĞ
 
         int count = 0;
@@ -185,17 +176,25 @@ Solution LocalSearch::solve() {
             if (update_solu(swap_pair, new_obj, _hashfun_one, _hashfun_two, _hashfun_three, step_length))count = 0;   //¸üĞÂµ±Ç°½â¡¢ÀúÊ·×îÓÅ½â¡¢count
             else count++; 
             iter++;
-            //if (step_length == 5000) {
-            //    //tabu_flag = true;
-            //    size_neighbor_struc += (int)((nb_nodes - nb_sub_nodes)*k);
-            //    k -= 0.01;
-            //    if (k < 0)k = 0;
-            //    //break;
-            //}
+            if (step_length == fixed_value) {
+                length_flag = true;
+                //size_neighbor_struc += (int)((nb_nodes - nb_sub_nodes)*k);
+                //k -= 0.01;
+                //if (k < 0)k = 0;
+                step_length = 0;
+                break;
+            }
         }
         if (tabu_flag)break;
     }
     mylog << "\n×Üµü´ú²½Êı£º" << iter <<= logsw_local;
+    clock_t end_time = clock();
+    //¹Ø¼üĞÅÏ¢Êä³öµ½ÎÄ¼şÖĞ
+    ofstream outFile;                                
+    outFile.open("../Deploy/Logs/log.csv", ios::app);
+    outFile << (double)(end_time - start_time) / CLOCKS_PER_SEC << "s" << ',' << nb_nodes << ',' << nb_sub_nodes << ',' << myrand.getSeed() << ',' << iter << ',' << local_best_obj << endl;
+    outFile.close();
+    //ÎÄ¼şÊä³ö½áÊø
     return Solution(nb_nodes, nb_sub_nodes, local_best, local_best_obj);
 }
 
@@ -259,7 +258,7 @@ bool LocalSearch::update_solu(const pair<int, int> &_pair, const pair<Distance, 
         best_hashfun_two = _hash_two;
         best_hashfun_three = _hash_three;
         //test:TODO:¶àÉÙ²½Ö®ºó²»ÄÜµü´ú¸üĞÂ
-        mylog << "\nµ±Ç°Îª£º" << local_best_obj << "     µü´ú£º" << iter <<= logsw_local;
+        //mylog << "\nµ±Ç°Îª£º" << local_best_obj << "     µü´ú£º" << iter <<= logsw_local;
         //test end
         flag = true;
         step = 0;
@@ -526,71 +525,78 @@ bool LocalSearch::update_solu_tabu(bool tabu_flag, const pair<int, int> &_pair, 
 }
 
 //ÁíÒ»ÖÖËæ»úÈÅ¶¯·½·¨:´Óµ±Ç°ÀúÊ·×îÓÅ½âµÄºòÑ¡½âÀïËæ»úÌô
-//bool LocalSearch::stochastic_perturbation(int &hashone, int &hashtwo, int &hashthree, Distance &max, Distance &min) {
-//    int one_toZero_node = 0;
-//    int zero_toOne_node = 0;
-//    int i = 0;
-//    int _new_hash_one = 0;
-//    int _new_hash_two = 0;
-//    int _new_hash_three = 0;
-//    while (true) {
-//        srand((unsigned)time(NULL));
-//        i = rand() % nb_sub_nodes;
-//        int j = rand() % size_neighbor_struc;
-//        one_toZero_node = select_nodes[i].first;
-//        zero_toOne_node = no_select_nodes[j].first;
-//        int _new_hash_one = hashone + hash_key_temp_one[zero_toOne_node] - hash_key_temp_one[one_toZero_node];  //¼ÆËã½»»»ºóĞÂ½âµÄ¹şÏ£º¯ÊıÖµ
-//        int _new_hash_two = hashtwo + hash_key_temp_two[zero_toOne_node] - hash_key_temp_two[one_toZero_node];
-//        int _new_hash_three = hashthree + hash_key_temp_three[zero_toOne_node] - hash_key_temp_three[one_toZero_node];
-//        _new_hash_one = (_new_hash_one + size_of_tabu_list) % size_of_tabu_list;                //xxf£º½â¾öbug2£º·ÀÖ¹³öÏÖ¸ºÊıºÍ>size_of_tabu_listµÄÊı
-//        _new_hash_two = (_new_hash_two + size_of_tabu_list) % size_of_tabu_list;
-//        _new_hash_three = (_new_hash_three + size_of_tabu_list) % size_of_tabu_list;
-//        if (tabu_list_three[_new_hash_three]) {       //xxf£ºÁ½¸ö»òÈı¸ö¹şÏ£º¯ÊıÎªÁË¼õĞ¡³åÍ»Åö×²£»Ò»¸ö¹şÏ£º¯ÊıÈİÒ×²»Í¬½âÓ³Éäµ½Í¬Ò»¸övalueÖµ£¬ÇÒºÜÈİÒ×³öÏÖÁÚÓò½â¶¼±»½û¼ÉÇé¿ö£¬ÒòÎªÊÇ´ÓÇ¿»¯ËÑË÷²ßÂÔ¿ªÊ¼
-//            if (tabu_list_two[_new_hash_two]) {
-//                if (tabu_list_one[_new_hash_one]);
-//                else break;
-//            }
-//            else break;
-//        }
-//        else break;
-//
-//    }
-//    Distance temp_min = node_dis_sum[zero_toOne_node] - ins.dis_nodes(zero_toOne_node, one_toZero_node);      //¼ÇÂ¼µ±Ç°Ò»´Î¶¯×÷µÄ×î´óÖµºÍ×îĞ¡Öµ;³õÊ¼»¯Îª½»»»Ö®ºóĞÂµÄÑ¡ÖĞ½ÚµãµÄ¾àÀëÖ®ºÍ
-//    Distance temp_max = temp_min;
-//    for (int k = 0; k < nb_sub_nodes; ++k) {
-//        if (k == i)continue;
-//        int node = select_nodes[k].first;
-//        Distance update_dis = node_dis_sum[node] - ins.dis_nodes(node, one_toZero_node) + ins.dis_nodes(node, zero_toOne_node);
-//        if (update_dis > temp_max)temp_max = update_dis;
-//        else if (temp_min > update_dis)temp_min = update_dis;
-//        else;
-//    }
-//    node_value[one_toZero_node] = 0;                       //¸üĞÂµ±Ç°½â
-//    node_value[zero_toOne_node] = 1;
-//    cur_obj = temp_max - temp_min;
-//    max_select_node = temp_max;
-//    min_select_node = temp_min;
-//
-//
-//    tabu_list_one[_new_hash_one] = 1;         //¸üĞÂÈı¸ö½û¼ÉÁĞ±í
-//    tabu_list_two[_new_hash_two] = 1;
-//    tabu_list_three[_new_hash_three] = 1;
-//    hashone = _new_hash_one;
-//    hashtwo = _new_hash_two;
-//    hashthree = _new_hash_three;
-//        for (int i = 0; i < nb_nodes; ++i) {
-//            node_dis_sum[i] = node_dis_sum[i] - ins.dis_nodes(i, one_toZero_node) + ins.dis_nodes(i, zero_toOne_node);
-//        }
-//    //sort(no_select_nodes.begin(), no_select_nodes.end(), compareByAscend);    //Î´Ñ¡ÖĞµÄÉıĞòÅÅÁĞ
-//    return true;
-//}
+bool LocalSearch::stochastic_perturbation(int &hashone, int &hashtwo, int &hashthree, Distance &max, Distance &min) {
+    int one_toZero_node = 0;
+    int zero_toOne_node = 0;
+    int i = 0;
+    int _new_hash_one = 0;
+    int _new_hash_two = 0;
+    int _new_hash_three = 0;
+    while (true) {
+        srand((unsigned)time(NULL));
+        i = rand() % nb_sub_nodes;
+        int j = rand() % size_neighbor_struc;
+        one_toZero_node = select_nodes[i].first;
+        zero_toOne_node = no_select_nodes[j].first;
+        int _new_hash_one = hashone + hash_key_temp_one[zero_toOne_node] - hash_key_temp_one[one_toZero_node];  //¼ÆËã½»»»ºóĞÂ½âµÄ¹şÏ£º¯ÊıÖµ
+        int _new_hash_two = hashtwo + hash_key_temp_two[zero_toOne_node] - hash_key_temp_two[one_toZero_node];
+        int _new_hash_three = hashthree + hash_key_temp_three[zero_toOne_node] - hash_key_temp_three[one_toZero_node];
+        _new_hash_one = (_new_hash_one + size_of_tabu_list) % size_of_tabu_list;                //xxf£º½â¾öbug2£º·ÀÖ¹³öÏÖ¸ºÊıºÍ>size_of_tabu_listµÄÊı
+        _new_hash_two = (_new_hash_two + size_of_tabu_list) % size_of_tabu_list;
+        _new_hash_three = (_new_hash_three + size_of_tabu_list) % size_of_tabu_list;
+        if (tabu_list_three[_new_hash_three]) {       //xxf£ºÁ½¸ö»òÈı¸ö¹şÏ£º¯ÊıÎªÁË¼õĞ¡³åÍ»Åö×²£»Ò»¸ö¹şÏ£º¯ÊıÈİÒ×²»Í¬½âÓ³Éäµ½Í¬Ò»¸övalueÖµ£¬ÇÒºÜÈİÒ×³öÏÖÁÚÓò½â¶¼±»½û¼ÉÇé¿ö£¬ÒòÎªÊÇ´ÓÇ¿»¯ËÑË÷²ßÂÔ¿ªÊ¼
+            if (tabu_list_two[_new_hash_two]) {
+                if (tabu_list_one[_new_hash_one]);
+                else break;
+            }
+            else break;
+        }
+        else break;
+    }
+    Distance temp_min = node_dis_sum[zero_toOne_node] - ins.dis_nodes(zero_toOne_node, one_toZero_node);      //¼ÇÂ¼µ±Ç°Ò»´Î¶¯×÷µÄ×î´óÖµºÍ×îĞ¡Öµ;³õÊ¼»¯Îª½»»»Ö®ºóĞÂµÄÑ¡ÖĞ½ÚµãµÄ¾àÀëÖ®ºÍ
+    Distance temp_max = temp_min;
+    for (int k = 0; k < nb_sub_nodes; ++k) {
+        if (k == i)continue;
+        int node = select_nodes[k].first;
+        Distance update_dis = node_dis_sum[node] - ins.dis_nodes(node, one_toZero_node) + ins.dis_nodes(node, zero_toOne_node);
+        if (update_dis > temp_max)temp_max = update_dis;
+        else if (temp_min > update_dis)temp_min = update_dis;
+        else;
+    }
+    node_value[one_toZero_node] = 0;                       //¸üĞÂµ±Ç°½â
+    node_value[zero_toOne_node] = 1;
+    cur_obj = temp_max - temp_min;
+    max_select_node = temp_max;
+    min_select_node = temp_min;
+
+
+    tabu_list_one[_new_hash_one] = 1;         //¸üĞÂÈı¸ö½û¼ÉÁĞ±í
+    tabu_list_two[_new_hash_two] = 1;
+    tabu_list_three[_new_hash_three] = 1;
+    hashone = _new_hash_one;
+    hashtwo = _new_hash_two;
+    hashthree = _new_hash_three;
+        for (int i = 0; i < nb_nodes; ++i) {
+            node_dis_sum[i] = node_dis_sum[i] - ins.dis_nodes(i, one_toZero_node) + ins.dis_nodes(i, zero_toOne_node);
+        }
+        no_select_nodes.clear();            //¸üĞÂ¸¨Öú½á¹¹select_nodesºÍno_select_nodes
+        select_nodes.clear();
+        Distance cur_temp_sum = (max_select_node + min_select_node) / 2;
+        for (int i = 0; i < nb_nodes; ++i) {
+            Distance temp = fabs(node_dis_sum[i] - cur_temp_sum);
+            if (node_value[i])select_nodes.push_back(make_pair(i, temp));
+            else no_select_nodes.push_back(make_pair(i, temp));
+        }
+    //sort(no_select_nodes.begin(), no_select_nodes.end(), compareByAscend);    //Î´Ñ¡ÖĞµÄÉıĞòÅÅÁĞ
+    return true;
+}
 
 //´ÓÀúÊ·×îÓÅ½â½øĞĞËæ»úÈÅ¶¯
-//bool LocalSearch::stochastic_perturbation(int &hashone, int &hashtwo, int &hashthree, Distance &max, Distance &min) {
+//bool LocalSearch::stochastic(int &hashone, int &hashtwo, int &hashthree, Distance &max, Distance &min) {
 //    hashone = 0;
 //    hashtwo = 0;
 //    hashthree = 0;
-//    int num_of_random_select = nb_sub_nodes / 5;       //Ëæ»úÈÅ¶¯ÖĞËæ»úÌôÑ¡³öµÄ½ÚµãµÄ¸öÊı
+//    int num_of_random_select = nb_sub_nodes / 2;       //Ëæ»úÈÅ¶¯ÖĞËæ»úÌôÑ¡³öµÄ½ÚµãµÄ¸öÊı
 //    vector<int> node_temp(nb_nodes, 0);
 //    vector<int> selectNodes;           //±£´æËæ»úÈÅ¶¯Ñ¡³öµÄ½Úµã
 //    selectNodes.reserve(nb_sub_nodes);
@@ -676,94 +682,94 @@ bool LocalSearch::update_solu_tabu(bool tabu_flag, const pair<int, int> &_pair, 
 //}
 
 //´Óµ±Ç°½â½øĞĞËæ»úÈÅ¶¯
-//bool LocalSearch::stochastic_perturbation(int &hashone, int &hashtwo, int &hashthree, Distance &max, Distance &min) {
-//    hashone = 0;
-//    hashtwo = 0;
-//    hashthree = 0;
-//    int num_of_random_select = nb_sub_nodes / 4 * 3;       //Ëæ»úÈÅ¶¯ÖĞËæ»úÌôÑ¡³öµÄ½ÚµãµÄ¸öÊı
-//    vector<int> node_temp(nb_nodes, 0);
-//    vector<int> selectNodes;           //±£´æËæ»úÈÅ¶¯Ñ¡³öµÄ½Úµã
-//    selectNodes.reserve(nb_sub_nodes);
-//    int num_select = 0, i = 0;      //½ÚµãÊı¼ÆÊı
-//    srand((unsigned)time(NULL));
-//    while (num_select < num_of_random_select) {        //Ëæ»úÌôÑ¡³öÒ»°ë½Úµã
-//        while (true) {
-//            i = rand() % nb_nodes;
-//            if (node_value[i] == 1 && node_temp[i] == 0)break;
-//        }
-//        node_temp[i] = 1;
-//        selectNodes.push_back(i);
-//        hashone += hash_key_temp_one[i];      //Í¬Ê±±£´æĞÂµÄ½âµÄhashÖµ
-//        hashtwo += hash_key_temp_two[i];
-//        hashthree += hash_key_temp_three[i];
-//        num_select++;
-//    }
-//
-//    //Ëæ»úÑ¡³öÒ»²¿·Ö½Úµã
-//    //int num = 0;
-//    //srand((unsigned)time(NULL));
-//    //while (num < nb_sub_nodes - num_of_random_select) {        //Ëæ»úÌôÑ¡³öÒ»°ë½Úµã
-//    //    while (true) {
-//    //        i = rand() % nb_nodes;
-//    //        if (local_best[i] == 0 && node_temp[i] == 0)break;
-//    //    }
-//    //    node_temp[i] = 1;
-//    //    selectNodes.push_back(i);
-//    //    hashone += hash_key_temp_one[i];      //Í¬Ê±±£´æĞÂµÄ½âµÄhashÖµ
-//    //    hashtwo += hash_key_temp_two[i];
-//    //    hashthree += hash_key_temp_three[i];
-//    //    num++;
-//    //    test
-//    //    new_nodes.push_back(i);
-//    //    test end
-//    //}
-//
-//    //Ì°ĞÄÌôÑ¡³öÒ»²¿·Ö½Úµã
-//    Distance temp_sum = (max_select_node + min_select_node) / 2;     //Ì°ĞÄÌôÑ¡³öÒ»°ë½Úµã
-//    priority_queue<pair<Distance, int>, vector<pair<Distance, int>>, greater<pair<Distance, int>> > q;
-//    for (int m = 0; m < nb_nodes; ++m) {
-//        if (node_value[m] == 0) {
-//            q.push(make_pair(fabs(node_dis_sum[m] - temp_sum), m));
-//        }
-//    }
-//    for (int m = 0; m < nb_sub_nodes - num_of_random_select; ++m) {
-//        pair <Distance, int> first = q.top();
-//        node_temp[first.second] = 1;
-//        selectNodes.push_back(first.second);
-//        hashone += hash_key_temp_one[first.second];      //Í¬Ê±±£´æĞÂµÄ½âµÄhashÖµ
-//        hashtwo += hash_key_temp_two[first.second];
-//        hashthree += hash_key_temp_three[first.second];
-//        q.pop();
-//    }
-//    hashone = hashone % size_of_tabu_list;
-//    hashtwo = hashtwo % size_of_tabu_list;
-//    hashthree = hashthree % size_of_tabu_list;
-//    node_value = node_temp;
-//    max = 0, min = DISTANCE_MAX;
-//    for (int l = 0; l < nb_nodes; ++l) {       //¸üĞÂnode_dis_num
-//        node_dis_sum[l] = 0;
-//        for (int m = 0; m < nb_sub_nodes; ++m) {
-//            node_dis_sum[l] += ins.dis_nodes(l, selectNodes[m]);
-//        }
-//        if (node_value[l]) {
-//            if (max < node_dis_sum[l])max = node_dis_sum[l];
-//            if (min > node_dis_sum[l])min = node_dis_sum[l];
-//        }
-//    }
-//    cur_obj = max - min;
-//    no_select_nodes.clear();            //¸üĞÂ¸¨Öú½á¹¹select_nodesºÍno_select_nodes
-//    select_nodes.clear();
-//    Distance cur_temp_sum = (max + min) / 2;
-//    for (int i = 0; i < nb_nodes; ++i) {
-//        Distance temp = fabs(node_dis_sum[i] - cur_temp_sum);
-//        if (node_value[i])select_nodes.push_back(make_pair(i, temp));
-//        else no_select_nodes.push_back(make_pair(i, temp));
-//    }
-//    return true;
-//}
+bool LocalSearch::stochastic(int &hashone, int &hashtwo, int &hashthree, Distance &max, Distance &min) {
+    hashone = 0;
+    hashtwo = 0;
+    hashthree = 0;
+    int num_of_random_select = nb_sub_nodes / 4 * 3;       //Ëæ»úÈÅ¶¯ÖĞËæ»úÌôÑ¡³öµÄ½ÚµãµÄ¸öÊı
+    vector<int> node_temp(nb_nodes, 0);
+    vector<int> selectNodes;           //±£´æËæ»úÈÅ¶¯Ñ¡³öµÄ½Úµã
+    selectNodes.reserve(nb_sub_nodes);
+    int num_select = 0, i = 0;      //½ÚµãÊı¼ÆÊı
+    srand((unsigned)time(NULL));
+    while (num_select < num_of_random_select) {        //Ëæ»úÌôÑ¡³öÒ»°ë½Úµã
+        while (true) {
+            i = rand() % nb_nodes;
+            if (node_value[i] == 1 && node_temp[i] == 0)break;
+        }
+        node_temp[i] = 1;
+        selectNodes.push_back(i);
+        hashone += hash_key_temp_one[i];      //Í¬Ê±±£´æĞÂµÄ½âµÄhashÖµ
+        hashtwo += hash_key_temp_two[i];
+        hashthree += hash_key_temp_three[i];
+        num_select++;
+    }
+
+    //Ëæ»úÑ¡³öÒ»²¿·Ö½Úµã
+    //int num = 0;
+    //srand((unsigned)time(NULL));
+    //while (num < nb_sub_nodes - num_of_random_select) {        //Ëæ»úÌôÑ¡³öÒ»°ë½Úµã
+    //    while (true) {
+    //        i = rand() % nb_nodes;
+    //        if (local_best[i] == 0 && node_temp[i] == 0)break;
+    //    }
+    //    node_temp[i] = 1;
+    //    selectNodes.push_back(i);
+    //    hashone += hash_key_temp_one[i];      //Í¬Ê±±£´æĞÂµÄ½âµÄhashÖµ
+    //    hashtwo += hash_key_temp_two[i];
+    //    hashthree += hash_key_temp_three[i];
+    //    num++;
+    //    test
+    //    new_nodes.push_back(i);
+    //    test end
+    //}
+
+    //Ì°ĞÄÌôÑ¡³öÒ»²¿·Ö½Úµã
+    Distance temp_sum = (max_select_node + min_select_node) / 2;     //Ì°ĞÄÌôÑ¡³öÒ»°ë½Úµã
+    priority_queue<pair<Distance, int>, vector<pair<Distance, int>>, greater<pair<Distance, int>> > q;
+    for (int m = 0; m < nb_nodes; ++m) {
+        if (node_value[m] == 0) {
+            q.push(make_pair(fabs(node_dis_sum[m] - temp_sum), m));
+        }
+    }
+    for (int m = 0; m < nb_sub_nodes - num_of_random_select; ++m) {
+        pair <Distance, int> first = q.top();
+        node_temp[first.second] = 1;
+        selectNodes.push_back(first.second);
+        hashone += hash_key_temp_one[first.second];      //Í¬Ê±±£´æĞÂµÄ½âµÄhashÖµ
+        hashtwo += hash_key_temp_two[first.second];
+        hashthree += hash_key_temp_three[first.second];
+        q.pop();
+    }
+    hashone = hashone % size_of_tabu_list;
+    hashtwo = hashtwo % size_of_tabu_list;
+    hashthree = hashthree % size_of_tabu_list;
+    node_value = node_temp;
+    max = 0, min = DISTANCE_MAX;
+    for (int l = 0; l < nb_nodes; ++l) {       //¸üĞÂnode_dis_num
+        node_dis_sum[l] = 0;
+        for (int m = 0; m < nb_sub_nodes; ++m) {
+            node_dis_sum[l] += ins.dis_nodes(l, selectNodes[m]);
+        }
+        if (node_value[l]) {
+            if (max < node_dis_sum[l])max = node_dis_sum[l];
+            if (min > node_dis_sum[l])min = node_dis_sum[l];
+        }
+    }
+    cur_obj = max - min;
+    no_select_nodes.clear();            //¸üĞÂ¸¨Öú½á¹¹select_nodesºÍno_select_nodes
+    select_nodes.clear();
+    Distance cur_temp_sum = (max + min) / 2;
+    for (int i = 0; i < nb_nodes; ++i) {
+        Distance temp = fabs(node_dis_sum[i] - cur_temp_sum);
+        if (node_value[i])select_nodes.push_back(make_pair(i, temp));
+        else no_select_nodes.push_back(make_pair(i, temp));
+    }
+    return true;
+}
 
 //Ñ¡³öµ±Ç°½âºÍÀúÊ·×îÓÅ½âµÄ¹²Í¬½Úµã£¬È»ºóËæ»úÌí¼Ó½Úµã
-//bool LocalSearch::stochastic_perturbation(int &hashone, int &hashtwo, int &hashthree, Distance &max, Distance &min) {
+//bool LocalSearch::stochastic(int &hashone, int &hashtwo, int &hashthree, Distance &max, Distance &min) {
 //    vector<int> node_temp(nb_nodes, 0);
 //    hashone = 0;
 //    hashtwo = 0;

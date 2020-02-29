@@ -25,7 +25,8 @@ private:
     bool find_best_move_tabu(pair<int, int> &_pair, pair<Distance, Distance> &_new_obj, int &_hash_one, int &_hash_two, int &_hash_three, const int &iter);
     bool update_solu_tabu(bool tabu_flag, const pair<int, int> &_pair, const pair<Distance, Distance> &_new_obj, int &_hash_one, int &_hash_two, int &_hash_three, int &step, int tabu_length);
     //test
-    //bool stochastic_perturbation(int &hashone, int &hashtwo, int &hashthree, Distance &max, Distance &min);
+    bool stochastic_perturbation(int &hashone, int &hashtwo, int &hashthree, Distance &max, Distance &min);
+    bool stochastic(int &hashone, int &hashtwo, int &hashthree, Distance &max, Distance &min);
     //test end
 
 private:
