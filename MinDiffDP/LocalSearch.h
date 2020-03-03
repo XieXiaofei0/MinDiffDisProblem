@@ -13,7 +13,6 @@ public:
     LocalSearch(const UMatrix &_matrix, double param, const Solution &_init_sol, const int _tabu_step,
         const int _size_of_tabu, const double _param1, const double _param2, const double _param3);
     Solution solve();
-    Solution solve_tabu();
 
 private:
     void init();         //初始化数据结构
@@ -21,21 +20,7 @@ private:
 private:
     void find_best_move(pair<int, int> &_pair, pair<Distance, Distance> &_new_obj, int &_hash_one, int &_hash_two, int &_hash_three);   //局部搜索中在邻域结构中找到最好的交换动作
     bool update_solu(const pair<int, int> &_pair, const pair<Distance, Distance> &_new_obj, int &_hash_one, int &_hash_two, int &_hash_three, int &step);   //做完邻域动作后更新当前解和历史最优解
-    //加入点的禁忌后的查找和更新
-    bool find_best_move_tabu(pair<int, int> &_pair, pair<Distance, Distance> &_new_obj, int &_hash_one, int &_hash_two, int &_hash_three, const int &iter);
-    bool update_solu_tabu(bool tabu_flag, const pair<int, int> &_pair, const pair<Distance, Distance> &_new_obj, int &_hash_one, int &_hash_two, int &_hash_three, int &step, int tabu_length);
-    //test
     bool stochastic_perturbation(int &hashone, int &hashtwo, int &hashthree, Distance &max, Distance &min);
-    bool stochastic(int &hashone, int &hashtwo, int &hashthree, Distance &max, Distance &min);
-    //test end
-
-private:
-    int hash_function_one();
-    int hash_function_two();
-    int hash_function_three();
-//    int hash_function_temp_one(const vector<int>& temp);
-//    int hash_function_temp_two(const vector<int>& temp);
-//    int hash_function_temp_three(const vector<int>& temp);
 
 private:
     const UMatrix &ins;      //算例矩阵
@@ -60,10 +45,7 @@ private:
     List<int> tabu_list_three;
     List<int> hash_key_temp_one;          //保存所有节点的hash中间键值(int)(floor(pow(i, hashFun_one_param)))
     List<int> hash_key_temp_two;
-    List<int> hash_key_temp_three;
-
-    //点的禁忌
-    List<int> tabu_nodes;                
+    List<int> hash_key_temp_three;            
 
     int best_hashfun_one;      //中间值:历史最优解的三个哈希函数值
     int best_hashfun_two;
@@ -83,6 +65,7 @@ private:
     double hashFun_one_param;     //三个哈希函数的参数
     double hashFun_two_param;
     double hashFun_three_param;
+    int length_disturbance;
 };
 
 }
