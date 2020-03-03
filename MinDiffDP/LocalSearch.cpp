@@ -24,7 +24,7 @@ LocalSearch::LocalSearch(const UMatrix &_matrix, const double param, const Solut
     best_hashfun_one(-1),best_hashfun_two(-1),best_hashfun_three(0),
     nb_nodes(_matrix.setele_num()),nb_sub_nodes(_matrix.subsetele_num()), 
     iter(0),//max_time(1000000*1000),                    //xxf:ĞŞ¸ÄËãÀıÔËĞĞ×î³¤Ê±¼äms
-    max_time(_matrix.setele_num() *1* 1000),
+    max_time(_matrix.setele_num() *1.3* 1000),
     //max_time(_matrix.setele_num()*1000),
     rate_of_sele_nodes(param), tabu_step(_tabu_step), size_of_tabu_list(_size_of_tabu),
     hashFun_one_param(_param1), hashFun_two_param(_param2), hashFun_three_param(_param3)
@@ -90,27 +90,13 @@ void LocalSearch::init() {              //xxf:done,right-12.10;ÁÙÊ±¹şÏ£º¯ÊıÖĞ¼ä¼
 
 Solution LocalSearch::solve() {
     Timer time(max_time);
-    int fixed_value = 2000;
-    //if (nb_sub_nodes == 50)fixed_value = 4000;
-    //else fixed_value = 2000;
-    //int fixed_value = 10000 / nb_nodes * 100 + 1000 / nb_sub_nodes * 100;
     int step_length = 0;           //¼ÇÂ¼¶àÉÙ²½Ö®ÄÚ²»ÄÜ¸Ä½øÀúÊ·×îÓÅ½â
     bool tabu_flag = false;          //ÅĞ¶ÏÊÇ·ñÁÚÓò½â¶¼ÔÚ½û¼ÉÖĞ
-    bool length_flag = false;
     clock_t start_time = clock();
     while (!time.isTimeOut()) {           //µ±Ê±¼äÎ´³¬Ê±Ê±£¬½øĞĞ¾Ö²¿ËÑË÷ 
         int _hashfun_one = best_hashfun_one;
         int _hashfun_two = best_hashfun_two;
         int _hashfun_three = best_hashfun_three;
-
-        //Ëæ»úÈÅ¶¯
-          if (length_flag) {
-                for (int i = 0; i < 3; ++i)
-                    stochastic_perturbation(_hashfun_one, _hashfun_two, _hashfun_three, max_select_node, min_select_node);
-                length_flag = false;
-                step_length = 0;
-            }
-        else {
             node_value = local_best;               //Ç¿»¯ËÑË÷²ßÂÔ£ºÓÃÀúÊ·×îÓÅ½â¸üĞÂµ±Ç°½â
             cur_obj = local_best_obj;
             //ÈôÀúÊ·×îÓÅ½â!=µ±Ç°½â,ÔòÒª¸üĞÂµ±Ç°½âµÄ²¿·ÖÊı¾İ½á¹¹node_dis_sum£¬max_select_node£¬ min_select_node£¬select_nodesºÍno_select_nodes
@@ -125,8 +111,7 @@ Solution LocalSearch::solve() {
                 if (node_value[i])select_nodes.push_back(make_pair(i, temp));
                 else no_select_nodes.push_back(make_pair(i, temp));
             }
-        }
-                //Ëæ»úÌôÑ¡ÁÚÓò½â½øĞĞÈÅ¶¯
+  //Ëæ»úÌôÑ¡ÁÚÓò½â½øĞĞÈÅ¶¯
         //if (tabu_flag) {
         //    for (int i = 0; i < 3; ++i) {
         //        stochastic_perturbation(_hashfun_one, _hashfun_two, _hashfun_three, max_select_node, min_select_node);
@@ -176,14 +161,14 @@ Solution LocalSearch::solve() {
             if (update_solu(swap_pair, new_obj, _hashfun_one, _hashfun_two, _hashfun_three, step_length))count = 0;   //¸üĞÂµ±Ç°½â¡¢ÀúÊ·×îÓÅ½â¡¢count
             else count++; 
             iter++;
-            if (step_length == fixed_value) {
-                length_flag = true;
-                //size_neighbor_struc += (int)((nb_nodes - nb_sub_nodes)*k);
-                //k -= 0.01;
-                //if (k < 0)k = 0;
-                step_length = 0;
-                break;
-            }
+            //if (step_length == fixed_value) {
+            //    length_flag = true;
+            //    //size_neighbor_struc += (int)((nb_nodes - nb_sub_nodes)*k);
+            //    //k -= 0.01;
+            //    //if (k < 0)k = 0;
+            //    step_length = 0;
+            //    break;
+            //}
         }
         if (tabu_flag)break;
     }
