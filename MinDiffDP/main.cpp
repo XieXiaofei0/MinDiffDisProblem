@@ -13,6 +13,7 @@ using namespace min_diff_dp;
 
 void test_localSearch(String &filename) {
     //TODO：各个参数如何更方便(_param和tabuStep是根据算例修改的)
+	
     const double _param = 0.3;           //表示邻域大小的参数
     const int tabuStep = 35;
     const int sizeTabu = 100000000;
